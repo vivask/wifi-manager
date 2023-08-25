@@ -1,0 +1,232 @@
+menu "WIFI Manager Configuration"
+
+    menu "Access Point Configuration"
+
+        config WIFI_MANAGER_TASK_CACHE_SIZE
+            hex "Cache size"
+            default 0x1000
+
+        config WIFI_MANAGER_TASK_PRIORITY
+            int "RTOS Task Priority for the wifi_manager"
+            default 5
+            help
+            Tasks spawn by the manager will have a priority of WIFI_MANAGER_TASK_PRIORITY-1. For this particular reason, minimum recommended task priority is 2.
+        
+        config WIFI_MANAGER_RETRY_TIMER
+            int "Time (in ms) between each retry attempt"
+            default 5000
+            help
+            Defines the time to wait before an attempt to re-connect to a saved wifi is made after connection is lost or another unsuccesful attempt is made.
+        
+        config WIFI_MANAGER_MAX_RETRY_START_AP
+            int "Max Retry before starting the AP"
+            default 3
+            help
+            Defines the maximum number of failed retries allowed before the WiFi manager starts its own access point.  
+            
+        config WIFI_MANAGER_RESTART_TIMER
+            int "Time (in ms) to wait before restart"
+            default 60000
+            help
+            Defines the time (in ms) to wait after a succesful connection before restart esp32.
+        
+        config WEBAPP_LOCATION
+            string "Defines the URL where the wifi manager is located"
+            default "/"
+            help
+            This parameter helps you relocate the wifimanager to another URL, for instance /wifimanager/ The trailing slash is important and should be included
+        
+        config DEFAULT_AP_SSID
+            string "Access Point SSID"
+            default "myssid"
+            help
+            SSID (network name) the the esp32 will broadcast.
+        
+        config DEFAULT_AP_PASSWORD
+            string "Access Point Password"
+            default "mypassword"
+            help
+            Password used for the Access Point. Leave empty and set AUTH MODE to WIFI_AUTH_OPEN for no password.
+        
+        config DEFAULT_AP_CHANNEL
+            int "Access Point WiFi Channel"
+            default 1
+            help
+            Be careful you might not see the access point if you use a channel not allowed in your country.
+        
+        config DEFAULT_AP_IP
+            string "Access Point IP Address"
+            default "10.10.0.1"
+            help
+            This is used for the redirection to the captive portal. It is recommended to leave unchanged.
+        
+        config DEFAULT_AP_GATEWAY
+            string "Access Point IP Gateway"
+            default "10.10.0.1"
+            help
+            This is used for the redirection to the captive portal. It is recommended to leave unchanged.
+        
+        config DEFAULT_AP_NETMASK
+            string "Access Point Netmask"
+            default "255.255.255.0"
+            help
+            This is used for the redirection to the captive portal. It is recommended to leave unchanged.
+        
+        config DEFAULT_AP_MAX_CONNECTIONS
+            int "Access Point Max Connections"
+            default 4
+            help
+            Max is 4.
+        
+        config DEFAULT_AP_BEACON_INTERVAL
+            int "Access Point Beacon Interval (ms)"
+            default 100
+            help
+            100ms is the recommended default.
+
+        config CERTIFICATE_BUFFER_SIZE
+            int "Size buffer in bytes for certificates and key files"
+            default 8192
+            help
+            The size of the buffer depends on the size of your certificate and key files and the available free flash space.
+
+        config DEFAULT_MAX_VFS_FAT_FILES
+            int "Maximum number of available files for VFS FAT"
+            default 6
+
+        config STORE_MOUNT_POINT
+            string "VFS mount point"
+            default "wifi"
+            help
+            Specify VFS mount point.
+
+        config STORE_CHECK_ON_START
+            bool "Check spiffs after mount"
+            default false
+    
+        config STORE_MAX_FILES
+            int "Maximal files use"
+            default 5
+            help
+            Specify SPIFFS max file opened.
+    
+    
+    endmenu
+    
+    menu "Flash Logging Configuration"
+
+        config USE_FLASH_LOGGING
+            bool "Use flash logging"
+            default y
+
+        if USE_FLASH_LOGGING   
+            config LOG_MESSAGE_MAX_LEN
+                int "Loging message maximum length"
+                default 256
+
+            config LOG_FILE_MAX_SIZE
+                hex "Loging file maximum size"
+                default 0x50000
+
+            config FLASH_LOG_TASK_CACHE_SIZE
+                hex "Cache size"
+                default 0x1000
+        
+        endif
+    
+    endmenu
+
+    menu "HTTP Server Configuration"
+   
+        config WEB_BASE_API
+            string "API base path"
+            default "/api/v1"
+            help
+            Specify API base path.
+
+        config WEB_USE_STORE
+            bool "Use dedicated storage"
+            default y
+    
+        if WEB_USE_STORE
+            config WEB_STORE_MOUNT_POINT
+                string "VFS mount point"
+                default "www"
+                help
+                Specify VFS mount point.
+
+            config WEB_STORE_CHECK_ON_START
+                bool "Check spiffs after mount"
+                default false
+        
+            config WEB_STORE_MAX_FILES
+                int "Maximal files use"
+                default 5
+                help
+                Specify SPIFFS max file opened.   
+        endif
+        
+    endmenu
+
+    menu "HTTP Client Configuration"
+   
+        config HTTP_CLIENT_TASK_CACHE_SIZE
+            hex "Cache size"
+            default 0x1000
+
+        config HTTP_CLIENT_MAX_URL_LEN
+            int "Maximal url length"
+            default 64
+            help
+            Specify maximal url length.                       
+    
+        config HTTP_CLIENT_MAX_RESPONSE_LEN
+            int "Maximal http response length"
+            default 1024
+            help
+            Specify maximal http response length.                       
+    
+        config HTTP_CLIENT_MAX_ERROR
+            int "Maximal erorr"
+            default 3
+            help
+            Specify maximal error before reconnect.                       
+
+        config HTTP_CLIENT_MAX_TRY_CONNECT
+            int "Maximal try connect"
+            default 20
+            help
+            Specify maximal try connect before restart.        
+
+        config HTTP_CLIENT_MAX_TRY_SEND
+            int "Maximal try send"
+            default 5
+            help
+            Specify maximal try send before error message.        
+                
+        config HTTP_CLIENT_CONNECT_PATH
+            string "Default connect path"
+            default "/orders"
+            help
+            Specify default connect path.               
+    endmenu
+
+    menu "OTA"
+
+        config USE_OTA
+            bool "Use Over The Air Updates"
+            default y
+
+        if USE_OTA 
+            config OTA_TASK_CACHE_SIZE
+                hex "Cache size"
+                default 0x2000
+               
+        endif
+
+    endmenu
+
+endmenu
+
+
+
