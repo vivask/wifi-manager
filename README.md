@@ -18,3 +18,13 @@ To get you started, esp32-wifi-manager needs:
 - esp-idf **4.4.4 and up**
 - esp32 or esp32-c3
 
+## Hello World
+
+Clone the repository where you want it to be. If you are unfamiliar with Git, you can use Github Desktop on Windows:
+
+```bash 
+git clone https://github.com/vivask/wifi-manager.git
+```
+
+In Visual Studio Code open folder *wifi-manager*
+
