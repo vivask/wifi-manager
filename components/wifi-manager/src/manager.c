@@ -21,7 +21,7 @@
    ----------------------------------------------------------------------
 
 @see https://github.com/tonyp7/esp32-wifi-manager
-@see https://github.com/vivask/esp32-wifi-manager
+@see https://github.com/vivask/wifi-manager
  */
 #include <stdio.h>
 #include <stdlib.h>

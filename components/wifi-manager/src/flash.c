@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
    ----------------------------------------------------------------------
 
-@see https://github.com/vivask/esp32-wifi-manager
+@see https://github.com/vivask/wifi-manager
 */
 #include <nvs_flash.h>
 #include <esp_vfs.h>
