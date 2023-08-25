@@ -30,9 +30,11 @@ In Visual Studio Code open folder *wifi-manager*
 
 ## User Interface
 
-The user interface source code is located here https://github.com/vivask/wifi-manager-ui
-The compiled user interface code is located *wifi-manager/components/wifi-manager/dist*
-After making changes to the user interface code, compile it according to the instructions. Next, you need to replace the existing code:
+The user interface source code is located here https://github.com/vivask/wifi-manager-ui.
+The compiled user interface code is located:
+ *wifi-manager/components/wifi-manager/dist*
+After making changes to the user interface code, compile it according to the instructions. 
+Next, you need to replace the existing code:
 
 ```bash 
 rm -rf wifi-manager/components/wifi-manager/dist
