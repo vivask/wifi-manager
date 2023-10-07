@@ -29,7 +29,7 @@
 #include "flash.h"
 #include "ntp_client.h"
 
-static const char TAG[] = "ntp_client";
+static const char TAG[] = "NTP_CLIENT";
 
 static time_t _sntp_init_time = 0;
 static time_t _sntp_init_tiks = 0;

@@ -41,6 +41,7 @@
 #define ESP32_SETUP_HTTP_CA CONFIG_WEB_BASE_API"/setup/http/ca"
 #define ESP32_SETUP_HTTP_CRT CONFIG_WEB_BASE_API"/setup/http/crt"
 #define ESP32_SETUP_HTTP_KEY CONFIG_WEB_BASE_API"/setup/http/key"
+#define ESP32_CONNECT CONFIG_WEB_BASE_API"/connect"
 
 #define REST_CHECK(a, str, goto_tag, ...)                                              \
     do                                                                                 \
@@ -140,7 +141,7 @@ esp_err_t start_rest_server(const char *base_path)
 
     
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.max_uri_handlers = 12;
+    config.max_uri_handlers = 13;
     config.uri_match_fn = httpd_uri_match_wildcard;
     config.lru_purge_enable = true;
     config.max_open_sockets = 5;
@@ -239,6 +240,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server_handle, &esp32_setup_http_key_post_uri);
+
+    /* URI handler for connect after configure complet */
+    httpd_uri_t esp32_connect_get_uri = {
+        .uri = ESP32_CONNECT,
+        .method = HTTP_GET,
+        .handler = esp32_sconnect_get_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server_handle, &esp32_connect_get_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {

@@ -58,6 +58,8 @@ esp_err_t esp32_setup_http_crt_post_handler(httpd_req_t *req);
 
 esp_err_t esp32_setup_http_key_post_handler(httpd_req_t *req);
 
+esp_err_t esp32_sconnect_get_handler(httpd_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif

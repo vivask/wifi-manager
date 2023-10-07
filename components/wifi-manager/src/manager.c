@@ -56,7 +56,7 @@
 #include "storage.h"
 #include "manager.h"
 
-//#define SETUP_MODE
+#define SETUP_MODE
 //#define DEBUG_MODE
 
 /* --- PRINTF_BYTE_TO_BINARY macro's --- */
@@ -87,7 +87,7 @@
 #endif
 /* --- end macros --- */
 
-#define STORE_BASE_PATH             "/"CONFIG_WEB_STORE_MOUNT_POINT   
+#define STORE_BASE_PATH             "/"CONFIG_STORE_MOUNT_POINT   
 #define DEFAULT_CACHE_SIZE 			CONFIG_WIFI_MANAGER_TASK_CACHE_SIZE
 #define DEFAULT_TIMEZONE 			CONFIG_TIMEZONE
 
@@ -383,121 +383,6 @@ char* wifi_manager_get_ap_list_json(){
 	return accessp_json;
 }
 
-/**
- * @brief Standard wifi event handler
- */
-static void wifi_manager_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
-
-
-	if (event_base == WIFI_EVENT){
-
-		switch(event_id){
-
-		case WIFI_EVENT_WIFI_READY:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_WIFI_READY");
-			break;
-
-		case WIFI_EVENT_SCAN_DONE:
-			ESP_LOGD(TAG, "EVENT: WIFI_EVENT_SCAN_DONE");
-	    	xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_SCAN_BIT);
-			wifi_event_sta_scan_done_t* event_sta_scan_done = (wifi_event_sta_scan_done_t*)malloc(sizeof(wifi_event_sta_scan_done_t));
-			*event_sta_scan_done = *((wifi_event_sta_scan_done_t*)event_data);
-	    	wifi_manager_send_message(WM_EVENT_SCAN_DONE, event_sta_scan_done);
-			break;
-
-		case WIFI_EVENT_STA_START:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_START");
-			break;
-
-		case WIFI_EVENT_STA_STOP:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_STOP");
-			break;
-
-		case WIFI_EVENT_STA_CONNECTED:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_CONNECTED");
-			break;
-
-		case WIFI_EVENT_STA_DISCONNECTED:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_DISCONNECTED");
-
-			wifi_event_sta_disconnected_t* wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t*)malloc(sizeof(wifi_event_sta_disconnected_t));
-			*wifi_event_sta_disconnected =  *( (wifi_event_sta_disconnected_t*)event_data );
-
-			/* if a DISCONNECT message is posted while a scan is in progress this scan will NEVER end, causing scan to never work again. For this reason SCAN_BIT is cleared too */
-			xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_WIFI_CONNECTED_BIT | WIFI_MANAGER_SCAN_BIT);
-
-			/* post disconnect event with reason code */
-			wifi_manager_send_message(WM_EVENT_STA_DISCONNECTED, (void*)wifi_event_sta_disconnected );
-			break;
-
-		case WIFI_EVENT_STA_AUTHMODE_CHANGE:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_AUTHMODE_CHANGE");
-			break;
-
-		case WIFI_EVENT_AP_START:
-			ESP_LOGW(TAG, "WIFI_EVENT_AP_START");
-			xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_AP_STARTED_BIT);
-			/* start the timer that will eventually shutdown the access point
-				* We check first that it's actually running because in case of a boot and restore connection
-				* the AP is not even started to begin with.
-				*/
-			TickType_t t = pdMS_TO_TICKS( WIFI_MANAGER_RESTART_TIMER );
-
-			/* if for whatever reason user configured the shutdown timer to be less than 1 tick, the AP is stopped straight away */
-			if(t > 0){
-				ESP_LOGW(TAG, "TIMER RESTART ACTIVATED!");
-				xTimerStart( wifi_manager_restart_timer, (TickType_t)0 );
-			}
-			else{
-				wifi_manager_send_message(WM_ORDER_STOP_AP, (void*)NULL);
-			}
-
-			break;
-
-		case WIFI_EVENT_AP_STOP:
-			ESP_LOGW(TAG, "WIFI_EVENT_AP_STOP");
-			xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_AP_STARTED_BIT);
-			break;
-
-		case WIFI_EVENT_AP_STACONNECTED:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_AP_STACONNECTED");
-			break;
-
-		case WIFI_EVENT_AP_STADISCONNECTED:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_AP_STADISCONNECTED");
-			break;
-
-		case WIFI_EVENT_AP_PROBEREQRECVED:
-			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_AP_PROBEREQRECVED");
-			break;
-
-		} /* end switch */
-	}
-	else if(event_base == IP_EVENT){
-
-		switch(event_id){
-
-		case IP_EVENT_STA_GOT_IP:
-			ESP_LOGI(TAG, "EVENT: IP_EVENT_STA_GOT_IP");
-	        xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_WIFI_CONNECTED_BIT);
-	        ip_event_got_ip_t* ip_event_got_ip = (ip_event_got_ip_t*)malloc(sizeof(ip_event_got_ip_t));
-			*ip_event_got_ip =  *( (ip_event_got_ip_t*)event_data );
-	        wifi_manager_send_message(WM_EVENT_STA_GOT_IP, (void*)(ip_event_got_ip) );
-			break;
-
-		case IP_EVENT_GOT_IP6:
-			ESP_LOGI(TAG, "EVENT: IP_EVENT_GOT_IP6");
-			break;
-
-		case IP_EVENT_STA_LOST_IP:
-			ESP_LOGI(TAG, "EVENT: IP_EVENT_STA_LOST_IP");
-			break;
-
-		}
-	}
-
-}
-
 wifi_config_t* wifi_manager_get_wifi_sta_config(){
 	return wifi_manager_sta_config;
 }
@@ -540,7 +425,8 @@ void free_esp32_config(esp32_config_t* config) {
 	free((void *)config->server_address);
 	free((void *)config->server_port);
 	free((void *)config->server_auth);
-	free((void *)config->ota_api);
+	free((void *)config->esp_json_key);
+	free((void *)config->stm_json_key);
 	free((void *)config->client_username);
 	free((void *)config->client_password);
 	free((void *)config->client_ca);
@@ -661,6 +547,123 @@ esp_netif_t* wifi_manager_get_esp_netif_ap(){
 
 esp_netif_t* wifi_manager_get_esp_netif_sta(){
 	return esp_netif_sta;
+}
+
+/**
+ * @brief Standard wifi event handler
+ */
+static void wifi_manager_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
+
+
+	if (event_base == WIFI_EVENT){
+
+		switch(event_id){
+
+		case WIFI_EVENT_WIFI_READY:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_WIFI_READY");
+			break;
+
+		case WIFI_EVENT_SCAN_DONE:
+			ESP_LOGD(TAG, "EVENT: WIFI_EVENT_SCAN_DONE");
+	    	xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_SCAN_BIT);
+			wifi_event_sta_scan_done_t* event_sta_scan_done = (wifi_event_sta_scan_done_t*)malloc(sizeof(wifi_event_sta_scan_done_t));
+			*event_sta_scan_done = *((wifi_event_sta_scan_done_t*)event_data);
+	    	wifi_manager_send_message(WM_EVENT_SCAN_DONE, event_sta_scan_done);
+			break;
+
+		case WIFI_EVENT_STA_START:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_START");
+			break;
+
+		case WIFI_EVENT_STA_STOP:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_STOP");
+			break;
+
+		case WIFI_EVENT_STA_CONNECTED:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_CONNECTED");
+			break;
+
+		case WIFI_EVENT_STA_DISCONNECTED:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_DISCONNECTED");
+
+			wifi_event_sta_disconnected_t* wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t*)malloc(sizeof(wifi_event_sta_disconnected_t));
+			*wifi_event_sta_disconnected =  *( (wifi_event_sta_disconnected_t*)event_data );
+
+			/* if a DISCONNECT message is posted while a scan is in progress this scan will NEVER end, causing scan to never work again. For this reason SCAN_BIT is cleared too */
+			xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_WIFI_CONNECTED_BIT | WIFI_MANAGER_SCAN_BIT);
+
+			/* post disconnect event with reason code */
+			wifi_manager_send_message(WM_EVENT_STA_DISCONNECTED, (void*)wifi_event_sta_disconnected );
+			break;
+
+		case WIFI_EVENT_STA_AUTHMODE_CHANGE:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_STA_AUTHMODE_CHANGE");
+			break;
+
+		case WIFI_EVENT_AP_START:
+			ESP_LOGW(TAG, "WIFI_EVENT_AP_START");
+			xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_AP_STARTED_BIT);
+			/* start the timer that will eventually shutdown the access point
+				* We check first that it's actually running because in case of a boot and restore connection
+				* the AP is not even started to begin with.
+				*/
+			TickType_t t = pdMS_TO_TICKS( WIFI_MANAGER_RESTART_TIMER );
+
+			/* if for whatever reason user configured the shutdown timer to be less than 1 tick, the AP is stopped straight away */
+			if(t > 0){
+#ifndef SETUP_MODE
+				ESP_LOGW(TAG, "TIMER RESTART ACTIVATED!");
+				xTimerStart( wifi_manager_restart_timer, (TickType_t)0 );
+#endif
+			}
+			else{
+				wifi_manager_send_message(WM_ORDER_STOP_AP, (void*)NULL);
+			}
+
+			break;
+
+		case WIFI_EVENT_AP_STOP:
+			ESP_LOGW(TAG, "WIFI_EVENT_AP_STOP");
+			xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_AP_STARTED_BIT);
+			break;
+
+		case WIFI_EVENT_AP_STACONNECTED:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_AP_STACONNECTED");
+			break;
+
+		case WIFI_EVENT_AP_STADISCONNECTED:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_AP_STADISCONNECTED");
+			break;
+
+		case WIFI_EVENT_AP_PROBEREQRECVED:
+			ESP_LOGI(TAG, "EVENT: WIFI_EVENT_AP_PROBEREQRECVED");
+			break;
+
+		} /* end switch */
+	}
+	else if(event_base == IP_EVENT){
+
+		switch(event_id){
+
+		case IP_EVENT_STA_GOT_IP:
+			ESP_LOGI(TAG, "EVENT: IP_EVENT_STA_GOT_IP");
+	        xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_WIFI_CONNECTED_BIT);
+	        ip_event_got_ip_t* ip_event_got_ip = (ip_event_got_ip_t*)malloc(sizeof(ip_event_got_ip_t));
+			*ip_event_got_ip =  *( (ip_event_got_ip_t*)event_data );
+	        wifi_manager_send_message(WM_EVENT_STA_GOT_IP, (void*)(ip_event_got_ip) );
+			break;
+
+		case IP_EVENT_GOT_IP6:
+			ESP_LOGI(TAG, "EVENT: IP_EVENT_GOT_IP6");
+			break;
+
+		case IP_EVENT_STA_LOST_IP:
+			ESP_LOGI(TAG, "EVENT: IP_EVENT_STA_LOST_IP");
+			break;
+
+		}
+	}
+
 }
 
 void wifi_manager( void * pvParameters ){

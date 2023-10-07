@@ -273,6 +273,14 @@ esp_err_t esp32_setup_http_key_post_handler(httpd_req_t *req) {
 
     response(req, true, "HTTP KEY save success!");
 
+    return ESP_OK;        
+}
+
+
+esp_err_t esp32_sconnect_get_handler(httpd_req_t *req) {
+
+    response(req, true, "ESP32 Connecting...");
+
     wifi_manager_connect_async();
 
     return ESP_OK;        

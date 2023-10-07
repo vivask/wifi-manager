@@ -494,6 +494,13 @@ void http_client_initialize() {
     /* create http client order task */
     xTaskCreate(&http_client_order_task, "http_client_order_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+1, &task_http_client_order);
 
+    xEventGroupWaitBits(
+            http_client_events,         // The event group being tested.
+            HC_WIFI_OK,                 // The bits within the event group to wait for.
+            pdFALSE,                    // HC_WIFI_OK should be not cleared before returning.
+            pdFALSE,                    // Don't wait for both bits, either bit will do.
+            portMAX_DELAY );            // Wait until the bit be set.          
+
     /* create http client send task */
     xTaskCreate(&http_client_send_task, "http_client_send_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+2, &task_http_client_send);
 }

@@ -50,7 +50,7 @@ bool ota(const char* data, int size) {
     bool ret = false;
     cJSON *root = cJSON_Parse(data);
     esp32_config_t* wifi_config = wifi_manager_get_config();
-    cJSON* item = cJSON_GetObjectItem(root, wifi_config->ota_api);
+    cJSON* item = cJSON_GetObjectItem(root, wifi_config->esp_json_key);
     if (item && item->valuestring) {
         size_t len = strlen(item->valuestring);
         if (len) {

@@ -276,15 +276,6 @@ void init_flash() {
     }
     ESP_ERROR_CHECK(ret);
 
-#if CONFIG_WEB_USE_STORE
-	/* mount spif file system on flash memory */
-	ESP_ERROR_CHECK(init_spiffs(
-		WWW_BASE_PATH,
-		CONFIG_WEB_STORE_MAX_FILES,
-		CHECK_WEB_STORE_ON_START
-		));
-#endif
-
 	/* mount spif file system on flash memory */
 	ESP_ERROR_CHECK(init_spiffs(
 		STORE_BASE_PATH,

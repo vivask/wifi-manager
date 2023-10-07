@@ -32,7 +32,7 @@
 #include "flash.h"
 #include "storage.h"
 
-#define STORE_BASE_PATH	"/"CONFIG_WEB_STORE_MOUNT_POINT   
+#define STORE_BASE_PATH	"/"CONFIG_STORE_MOUNT_POINT   
 
 #define WIFI_CONFIG_FILE STORE_BASE_PATH "/wifi_config.json"
 #define WIFI_CA_FILE STORE_BASE_PATH "/wifi_ca.json"
@@ -46,7 +46,7 @@
 #define HTTP_CRT_FILE STORE_BASE_PATH "/http_crt.json"
 #define HTTP_KEY_FILE STORE_BASE_PATH "/http_key.json"
 
-static const char TAG[] = "wifi_store";
+static const char TAG[] = "STORAGE";
 
 static char* copy_json_item(cJSON* json, const char* item_name) {
 	cJSON* item = cJSON_GetObjectItem(json, item_name);
@@ -113,7 +113,8 @@ static void http_json_string_to_config(esp32_config_t* config, const char* http_
 	config->server_address = copy_json_item(http_json, "server_address");
 	config->server_port = cJSON_GetObjectItem(http_json, "server_port")->valueint;
 	config->server_api = copy_json_item(http_json, "server_api");
-	config->ota_api = copy_json_item(http_json, "ota_api");
+	config->esp_json_key = copy_json_item(http_json, "esp_json_key");
+	config->stm_json_key = copy_json_item(http_json, "stm_json_key");
 	config->server_auth = copy_json_item(http_json, "server_auth");
 	config->client_username = copy_json_item(http_json, "client_username");
 	config->client_password = copy_json_item(http_json, "client_password");

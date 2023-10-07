@@ -154,7 +154,8 @@ typedef struct _esp32_config_t {
     char* client_ca;
     char* client_crt;
     char* client_key;
-    char* ota_api;
+    char* esp_json_key;
+    char* stm_json_key;
 }esp32_config_t;
 
 

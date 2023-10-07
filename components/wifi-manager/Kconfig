@@ -96,7 +96,7 @@ menu "WIFI Manager Configuration"
 
         config STORE_MOUNT_POINT
             string "VFS mount point"
-            default "wifi"
+            default "storage"
             help
             Specify VFS mount point.
 
@@ -143,29 +143,7 @@ menu "WIFI Manager Configuration"
             default "/api/v1"
             help
             Specify API base path.
-
-        config WEB_USE_STORE
-            bool "Use dedicated storage"
-            default y
-    
-        if WEB_USE_STORE
-            config WEB_STORE_MOUNT_POINT
-                string "VFS mount point"
-                default "www"
-                help
-                Specify VFS mount point.
-
-            config WEB_STORE_CHECK_ON_START
-                bool "Check spiffs after mount"
-                default false
-        
-            config WEB_STORE_MAX_FILES
-                int "Maximal files use"
-                default 5
-                help
-                Specify SPIFFS max file opened.   
-        endif
-        
+       
     endmenu
 
     menu "HTTP Client Configuration"
