@@ -355,9 +355,6 @@ void wifi_manager_safe_update_sta_ip_string(uint32_t ip){
 		strcpy(wifi_manager_sta_ip, str_ip);
 
 		ESP_LOGI(TAG, "Set STA IP String to: %s", wifi_manager_sta_ip);
-		if(strcmp(wifi_manager_sta_ip, "0.0.0.0") != 0){
-			FLASH_LOGI("Set STA IP Address to: %s", wifi_manager_sta_ip);	
-		}
 
 		wifi_manager_unlock_sta_ip_string();
 	}
@@ -743,7 +740,7 @@ void wifi_manager( void * pvParameters ){
 	ESP_ERROR_CHECK(esp_wifi_start());
 
 	/* start http server */
-	start_rest_server(STORE_BASE_PATH);
+	// start_rest_server(STORE_BASE_PATH);
 
 	/* wifi scanner config */
 	wifi_scan_config_t scan_config = {

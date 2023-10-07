@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
    ----------------------------------------------------------------------
 
-@see https://github.com/vivask/wifi-manager
+@see https://github.com/vivask/esp32-wifi-manager
 */
 #include <string.h>
 #include <esp_log.h>
@@ -236,7 +236,12 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
             break;
         case HTTP_EVENT_ON_CONNECTED:
             error_count = 0;
-            ESP_LOGW(TAG, "HTTP_EVENT_ON_CONNECTED");
+            ESP_LOGI(TAG, "HTTP_EVENT_ON_CONNECTED");
+            xEventGroupSetBits(http_client_events, HC_STATUS_OK);
+
+            /* callback */
+            run_cb(cb_ready_ptr, NULL);
+
             break;
         case HTTP_EVENT_HEADER_SENT:
             ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
@@ -288,6 +293,7 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
                 if(!ota(output_buffer, output_len)){
                     if(cb_response_ptr) cb_response_ptr( output_buffer, output_len );
                 }else {
+                    run_cb(cb_not_ready_ptr, NULL);
                     xEventGroupClearBits(http_client_events, HC_STATUS_OK);
                     firmware_upgrade(cb_ota_finish);
                 }
@@ -316,8 +322,8 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
             }
             output_len = 0;
             error_count = 0;
-            vTaskDelay(5000 / portTICK_RATE_MS);
-            http_client_send_order(HC_ORDER_CONECT);
+            // vTaskDelay(5000 / portTICK_RATE_MS);
+            // http_client_send_order(HC_ORDER_CONECT);
             break;
     }
     return ESP_OK;
@@ -453,14 +459,7 @@ static void http_client_order_task( void * pvParameters ) {
                             client = esp_http_client_init(&http_client_config);
                             esp_http_client_set_header(client, "Content-Type", "application/json");
                             esp_err_t err = esp_http_client_perform(client);
-                            if (err == ESP_OK) {
-                                ESP_LOGI(TAG, "Conection success!");
-                                xEventGroupSetBits(http_client_events, HC_STATUS_OK);
-
-                                /* callback */
-                                run_cb(cb_ready_ptr, NULL);
-                                break;
-                            }else {
+                            if (err != ESP_OK) {
                                 ESP_LOGE(TAG, "Conection fail: %s", esp_err_to_name(err));
                                 vTaskDelay(2000 / portTICK_RATE_MS);
                             }                           

@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
    ----------------------------------------------------------------------
 
-@see https://github.com/vivask/wifi-manager
+@see https://github.com/vivask/esp32-wifi-manager
 */
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
@@ -60,7 +60,7 @@ bool ota(const char* data, int size) {
                 file = (char*)malloc(len+1);
                 memcpy((void*)file, (void*)item->valuestring, len);
                 file[len] = '\0';
-                ESP_LOGI(TAG, "Upgrade file: %s", file);
+                ESP_LOGI(TAG, "Firmware file: %s", file);
             }
             ret = true;
         }

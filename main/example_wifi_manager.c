@@ -114,6 +114,9 @@ static void main_task(void* pvParameters) {
 
 void app_main(void)
 {
+  /* create http client event group */
+  example_events = xEventGroupCreate();      
+
 	/* initialize flash */
 	init_flash();
 
