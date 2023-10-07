@@ -1,42 +1,32 @@
-# ESP32 Wifi Manager
+# _Sample project_
 
-Is a C esp-idf component for ESP32 allows easy Wifi networking and http client.
-Based on the Tony Pottier project https://github.com/tonyp7/esp32-wifi-manager
+(See the README.md file in the upper level 'examples' directory for more information about examples.)
 
-Advanced features:
-  - support secure enterprise wifi networks
-  - support flash logging
-  - secure http client
-  - OTA support
+This is the simplest buildable example. The example is used by command `idf.py create-project`
+that copies the project to user specified path and set it's name. For more information follow the [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project)
 
-# Getting Started
 
-## Requirements
 
-To get you started, esp32-wifi-manager needs:
+## How to use example
+We encourage the users to use the example as a template for the new projects.
+A recommended way is to follow the instructions on a [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project).
 
-- esp-idf **4.4.4 and up**
-- esp32 or esp32-c3
+## Example folder contents
 
-## Hello World
+The project **sample_project** contains one source file in C language [main.c](main/main.c). The file is located in folder [main](main).
 
-Clone the repository where you want it to be. If you are unfamiliar with Git, you can use Github Desktop on Windows:
+ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt`
+files that provide set of directives and instructions describing the project's source files and targets
+(executable, library, or both). 
 
-```bash 
-git clone https://github.com/vivask/wifi-manager.git
+Below is short explanation of remaining files in the project folder.
+
 ```
-
-In Visual Studio Code open folder *wifi-manager*
-
-## User Interface
-
-The user interface source code is located here https://github.com/vivask/wifi-manager-ui.
-The compiled user interface code is located:
- *wifi-manager/components/wifi-manager/dist*
-After making changes to the user interface code, compile it according to the instructions. 
-Next, you need to replace the existing code:
-
-```bash 
-rm -rf wifi-manager/components/wifi-manager/dist
-cp wifi-manager-ui/components/wifi-manager/dist wifi-manager/components/wifi-manager/dist
+├── CMakeLists.txt
+├── main
+│   ├── CMakeLists.txt
+│   └── main.c
+└── README.md                  This is the file you are currently reading
 ```
+Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system. 
+They are not used or needed when building with CMake and idf.py.
