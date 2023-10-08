@@ -56,7 +56,7 @@
 #include "storage.h"
 #include "manager.h"
 
-#define SETUP_MODE
+// #define SETUP_MODE
 //#define DEBUG_MODE
 
 /* --- PRINTF_BYTE_TO_BINARY macro's --- */

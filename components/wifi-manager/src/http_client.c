@@ -236,12 +236,7 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
             break;
         case HTTP_EVENT_ON_CONNECTED:
             error_count = 0;
-            ESP_LOGI(TAG, "HTTP_EVENT_ON_CONNECTED");
-            xEventGroupSetBits(http_client_events, HC_STATUS_OK);
-
-            /* callback */
-            run_cb(cb_ready_ptr, NULL);
-
+            ESP_LOGW(TAG, "HTTP_EVENT_ON_CONNECTED");
             break;
         case HTTP_EVENT_HEADER_SENT:
             ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
@@ -322,8 +317,8 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
             }
             output_len = 0;
             error_count = 0;
-            // vTaskDelay(5000 / portTICK_RATE_MS);
-            // http_client_send_order(HC_ORDER_CONECT);
+            vTaskDelay(5000 / portTICK_RATE_MS);
+            http_client_send_order(HC_ORDER_CONECT);
             break;
     }
     return ESP_OK;
@@ -459,7 +454,14 @@ static void http_client_order_task( void * pvParameters ) {
                             client = esp_http_client_init(&http_client_config);
                             esp_http_client_set_header(client, "Content-Type", "application/json");
                             esp_err_t err = esp_http_client_perform(client);
-                            if (err != ESP_OK) {
+                            if (err == ESP_OK) {
+                                ESP_LOGI(TAG, "Conection success!");
+                                xEventGroupSetBits(http_client_events, HC_STATUS_OK);
+
+                                /* callback */
+                                run_cb(cb_ready_ptr, NULL);
+                                break;
+                            }else {
                                 ESP_LOGE(TAG, "Conection fail: %s", esp_err_to_name(err));
                                 vTaskDelay(2000 / portTICK_RATE_MS);
                             }                           
@@ -494,12 +496,13 @@ void http_client_initialize() {
     /* create http client order task */
     xTaskCreate(&http_client_order_task, "http_client_order_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+1, &task_http_client_order);
 
+    /* Wait WiFi ready*/
     xEventGroupWaitBits(
             http_client_events,         // The event group being tested.
             HC_WIFI_OK,                 // The bits within the event group to wait for.
             pdFALSE,                    // HC_WIFI_OK should be not cleared before returning.
             pdFALSE,                    // Don't wait for both bits, either bit will do.
-            portMAX_DELAY );            // Wait until the bit be set.          
+            portMAX_DELAY );            // Wait until the bit be set.        
 
     /* create http client send task */
     xTaskCreate(&http_client_send_task, "http_client_send_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+2, &task_http_client_send);
