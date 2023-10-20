@@ -354,12 +354,7 @@ static void http_client_send_task( void * pvParameters ) {
 
     /* main processing loop */
     for(;;){
-        xEventGroupWaitBits(
-                http_client_events,         // The event group being tested.
-                HC_STATUS_OK,               // The bits within the event group to wait for.
-                pdFALSE,                    // HC_STATUS_OK should be not cleared before returning.
-                pdFALSE,                    // Don't wait for both bits, either bit will do.
-                portMAX_DELAY );            // Wait until the bit be set.          
+        xEventGroupWaitBits(http_client_events, HC_STATUS_OK | HC_WIFI_OK, pdFALSE, pdTRUE, portMAX_DELAY);
         xStatus = xQueueReceive( http_client_send_queue, &msg, portMAX_DELAY );
         if( xStatus == pdPASS ){
             esp_http_client_set_method(client, msg.method); 
@@ -494,14 +489,6 @@ void http_client_initialize() {
     
     /* create http client order task */
     xTaskCreate(&http_client_order_task, "http_client_order_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+1, &task_http_client_order);
-
-    /* Wait WiFi ready*/
-    xEventGroupWaitBits(
-            http_client_events,         // The event group being tested.
-            HC_WIFI_OK,                 // The bits within the event group to wait for.
-            pdFALSE,                    // HC_WIFI_OK should be not cleared before returning.
-            pdFALSE,                    // Don't wait for both bits, either bit will do.
-            portMAX_DELAY );            // Wait until the bit be set.        
 
     /* create http client send task */
     xTaskCreate(&http_client_send_task, "http_client_send_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+2, &task_http_client_send);

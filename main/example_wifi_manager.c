@@ -89,12 +89,7 @@ void static send_flash_logging_message(const time_t t, const char log_type, cons
 static void main_task(void* pvParameters) {
 
   for(;;) {
-    xEventGroupWaitBits(
-            example_events,         // The event group being tested.
-            HTTP_CLIENT_OK,         // The bits within the event group to wait for.
-            pdFALSE,                // HTTP_CLIENT_OK should be not cleared before returning.
-            pdFALSE,                // Don't wait for both bits, either bit will do.
-            portMAX_DELAY );        // Wait until the bit be set.                            
+    xEventGroupWaitBits(example_events, HTTP_CLIENT_OK, pdFALSE, pdFALSE, portMAX_DELAY);
 
 #ifdef CONFIG_USE_FLASH_LOGGING             
     // send flash logging
@@ -102,7 +97,8 @@ static void main_task(void* pvParameters) {
     ESP_LOGD(TAG, "Flash log sending complet!");
 #endif
 
-      vTaskDelay(2000 / portTICK_RATE_MS);
+    ESP_LOGI(TAG, "FREE HEAP:%d\n", esp_get_free_heap_size());
+    vTaskDelay(2000 / portTICK_RATE_MS);
   } 
 
 	ESP_LOGI(TAG, "GET ORDERS TASK STOPPED");
@@ -131,17 +127,9 @@ void app_main(void)
   http_client_set_not_ready_callback(&cb_http_client_not_ready);
 
   /* Waiting for HTTP client initialization*/
-  xEventGroupWaitBits(
-          example_events,                // The event group being tested.
-          HTTP_CLIENT_OK,               // The bits within the event group to wait for.
-          pdFALSE,                    // HC_STATUS_OK should be not cleared before returning.
-          pdFALSE,                    // Don't wait for both bits, either bit will do.
-          portMAX_DELAY );            // Wait until the bit be set.          
+  xEventGroupWaitBits(example_events, HTTP_CLIENT_OK, pdFALSE, pdFALSE, portMAX_DELAY);
 
   /* Initialithe peripheral an start another tasks*/
-
   FLASH_LOGI("TEST");
-
   xTaskCreate(&main_task, "main_task", 0x1000, NULL, CONFIG_WIFI_MANAGER_TASK_PRIORITY+3, NULL);
-  ESP_LOGI(TAG, "FREE HEAP:%d\n", esp_get_free_heap_size());
 }
