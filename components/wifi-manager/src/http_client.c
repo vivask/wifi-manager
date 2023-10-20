@@ -236,7 +236,7 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
             break;
         case HTTP_EVENT_ON_CONNECTED:
             error_count = 0;
-            ESP_LOGW(TAG, "HTTP_EVENT_ON_CONNECTED");
+            ESP_LOGI(TAG, "HTTP_EVENT_ON_CONNECTED");
             break;
         case HTTP_EVENT_HEADER_SENT:
             ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
@@ -455,7 +455,6 @@ static void http_client_order_task( void * pvParameters ) {
                             esp_http_client_set_header(client, "Content-Type", "application/json");
                             esp_err_t err = esp_http_client_perform(client);
                             if (err == ESP_OK) {
-                                ESP_LOGI(TAG, "Conection success!");
                                 xEventGroupSetBits(http_client_events, HC_STATUS_OK);
 
                                 /* callback */
@@ -506,4 +505,5 @@ void http_client_initialize() {
 
     /* create http client send task */
     xTaskCreate(&http_client_send_task, "http_client_send_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+2, &task_http_client_send);
+    ESP_LOGI(TAG, "FREE HEAP:%d\n", esp_get_free_heap_size());
 }

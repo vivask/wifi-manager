@@ -41,7 +41,6 @@ static void cb_http_client_response(const char* data, int len) {
   */
 static void cb_http_client_ready(void* pvParameters) {
   xEventGroupSetBits(example_events, HTTP_CLIENT_OK);
-  ESP_LOGI(TAG,"HTTP Client connected");
 }
 
 /**
@@ -51,7 +50,6 @@ static void cb_http_client_ready(void* pvParameters) {
   */
 static void cb_http_client_not_ready(void* pvParameters) {
   xEventGroupClearBits(example_events, HTTP_CLIENT_OK);
-  ESP_LOGI(TAG, "HTTP Client disconnected");
 }
 
 /**
@@ -114,6 +112,7 @@ static void main_task(void* pvParameters) {
 
 void app_main(void)
 {
+  ESP_LOGI(TAG, "FREE HEAP:%d\n", esp_get_free_heap_size());
   /* create http client event group */
   example_events = xEventGroupCreate();      
 
@@ -141,7 +140,8 @@ void app_main(void)
 
   /* Initialithe peripheral an start another tasks*/
 
-  
-  xTaskCreate(&main_task, "main_task", 0x1000, NULL, CONFIG_WIFI_MANAGER_TASK_PRIORITY+3, NULL);
+  FLASH_LOGI("TEST");
 
+  xTaskCreate(&main_task, "main_task", 0x1000, NULL, CONFIG_WIFI_MANAGER_TASK_PRIORITY+3, NULL);
+  ESP_LOGI(TAG, "FREE HEAP:%d\n", esp_get_free_heap_size());
 }

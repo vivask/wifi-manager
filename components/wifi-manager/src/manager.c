@@ -252,7 +252,8 @@ void wifi_manager_start(bool ap_mode){
 #endif
 
 	/* start wifi manager task */
-	xTaskCreate(&wifi_manager, "wifi_manager", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY, &task_wifi_manager);	
+	xTaskCreate(&wifi_manager, "wifi_manager", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY, &task_wifi_manager);
+	ESP_LOGI(TAG, "FREE HEAP:%d\n", esp_get_free_heap_size());	
 }
 
 
