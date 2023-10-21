@@ -18,21 +18,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
    ----------------------------------------------------------------------
 
-@see https://github.com/vivask/wifi-manager
+@see https://github.com/vivask/esp32-wifi-manager
 */
-#include <stdlib.h>
-#include "list.h"
+#pragma once
 
-void push_cb(CallBackList **head, Func func) {
-    CallBackList *tmp = (CallBackList*) malloc(sizeof(CallBackList));
-    tmp->func = func;
-    tmp->next = (*head);
-    (*head) = tmp;
-}
+#include <stdint.h>
 
-void run_cb(const CallBackList *head, void* param) {
-    while(head) {
-        head->func(param);
-        head = head->next;
-    }
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/* list of call back functions */
+typedef void (*ptr_func_t)(void*);
+typedef struct callback_list_t {
+    ptr_func_t func;
+    struct callback_list_t *next;
+} callback_list_t;
+
+
+void push_callback(callback_list_t **head, ptr_func_t func);
+void run_callback(const callback_list_t *head, void* param);
+#ifdef __cplusplus
 }
+#endif
+
+/**@}*/

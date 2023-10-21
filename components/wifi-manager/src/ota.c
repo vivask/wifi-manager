@@ -33,13 +33,17 @@
 #include "flash.h"
 #include "ota.h"
 
+#define HASH_LEN                32
+
+#ifdef CONFIG_USE_OTA
 #define DEFAULT_CACHE_SIZE      CONFIG_OTA_TASK_CACHE_SIZE
 #define OTA_RECV_TIMEOUT_MS     5000
-#define HASH_LEN                32
 #define OTA_RESTART_TIMER_MS    2000
+#endif
 
 static const char *TAG = "OTA";
 
+#ifdef CONFIG_USE_OTA
 /* @brief firmware file name */
 static char* file = NULL;
 
@@ -142,6 +146,21 @@ static void firmware_upgrade_task(void  *pvParameter){
     vTaskDelete( NULL );
 }
 
+void ota_set_finish_callback( void (*func_ptr)(bool) ){
+
+	if(cb_finish_ptr == NULL && cb_finish_ptr != func_ptr){
+		cb_finish_ptr = func_ptr;
+	}else {
+        ESP_LOGW(TAG, "The callback ota finish is already bound to another function");
+    }
+}
+
+void firmware_upgrade( void (*func_ptr)(bool) ){
+    ota_set_finish_callback(func_ptr);
+    xTaskCreate(&firmware_upgrade_task, "firmware_upgrade_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+1, NULL);
+}
+#endif
+
 static void print_sha256(const uint8_t *image_hash, const char *label)
 {
     char hash_print[HASH_LEN * 2 + 1];
@@ -167,18 +186,4 @@ void get_sha256_of_partitions(void)
     // get sha256 digest for running partition
     esp_partition_get_sha256(esp_ota_get_running_partition(), sha_256);
     print_sha256(sha_256, "SHA-256 for current firmware: ");
-}
-
-void ota_set_finish_callback( void (*func_ptr)(bool) ){
-
-	if(cb_finish_ptr == NULL && cb_finish_ptr != func_ptr){
-		cb_finish_ptr = func_ptr;
-	}else {
-        ESP_LOGW(TAG, "The callback ota finish is already bound to another function");
-    }
-}
-
-void firmware_upgrade( void (*func_ptr)(bool) ){
-    ota_set_finish_callback(func_ptr);
-    xTaskCreate(&firmware_upgrade_task, "firmware_upgrade_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+1, NULL);
 }

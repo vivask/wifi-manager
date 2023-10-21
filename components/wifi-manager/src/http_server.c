@@ -31,17 +31,19 @@
 #include "http_server.h"
 #include "http_handlers.h"
 
-#define WIFI_ACCESS_POINTS CONFIG_WEB_BASE_API"/wifi/ap"
-#define ESP32_SETUP_WIFI CONFIG_WEB_BASE_API"/setup/wifi"
-#define ESP32_SETUP_WIFI_CA CONFIG_WEB_BASE_API"/setup/wifi/ca"
-#define ESP32_SETUP_WIFI_CRT CONFIG_WEB_BASE_API"/setup/wifi/crt"
-#define ESP32_SETUP_WIFI_KEY CONFIG_WEB_BASE_API"/setup/wifi/key"
-#define ESP32_SETUP_IPV4 CONFIG_WEB_BASE_API"/setup/ipv4"
-#define ESP32_SETUP_HTTP CONFIG_WEB_BASE_API"/setup/http"
-#define ESP32_SETUP_HTTP_CA CONFIG_WEB_BASE_API"/setup/http/ca"
-#define ESP32_SETUP_HTTP_CRT CONFIG_WEB_BASE_API"/setup/http/crt"
-#define ESP32_SETUP_HTTP_KEY CONFIG_WEB_BASE_API"/setup/http/key"
-#define ESP32_CONNECT CONFIG_WEB_BASE_API"/connect"
+#define WEB_BASE_API "/api/v1"
+
+#define WIFI_ACCESS_POINTS WEB_BASE_API"/wifi/ap"
+#define ESP32_SETUP_WIFI WEB_BASE_API"/setup/wifi"
+#define ESP32_SETUP_WIFI_CA WEB_BASE_API"/setup/wifi/ca"
+#define ESP32_SETUP_WIFI_CRT WEB_BASE_API"/setup/wifi/crt"
+#define ESP32_SETUP_WIFI_KEY WEB_BASE_API"/setup/wifi/key"
+#define ESP32_SETUP_IPV4 WEB_BASE_API"/setup/ipv4"
+#define ESP32_SETUP_HTTP WEB_BASE_API"/setup/http"
+#define ESP32_SETUP_HTTP_CA WEB_BASE_API"/setup/http/ca"
+#define ESP32_SETUP_HTTP_CRT WEB_BASE_API"/setup/http/crt"
+#define ESP32_SETUP_HTTP_KEY WEB_BASE_API"/setup/http/key"
+#define ESP32_CONNECT WEB_BASE_API"/connect"
 
 #define REST_CHECK(a, str, goto_tag, ...)                                              \
     do                                                                                 \

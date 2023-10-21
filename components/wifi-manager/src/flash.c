@@ -32,35 +32,32 @@
 #include "ota.h"
 #include "manager.h"
 #include "ntp_client.h"
-#include "http_client.h"
 #include "flash.h"
 
-  
-#ifdef CONFIG_USE_FLASH_LOGGING  
 
 #define STORE_BASE_PATH             "/"CONFIG_STORE_MOUNT_POINT   
+
+#ifdef CONFIG_STORE_CHECK_ON_START
+#define CHECK_STORE_ON_START        1
+#else
+#define CHECK_STORE_ON_START 	    0
+#endif
+
+#ifdef CONFIG_USE_FLASH_LOGGING  
 #define LOG_FILE STORE_BASE_PATH    "/log.txt"
 
 #ifdef CONFIG_WEB_USE_STORE
 #define WWW_BASE_PATH               "/"CONFIG_WEB_STORE_MOUNT_POINT       
 #endif
 
-#ifdef CONFIG_STORE_CHECK_ON_START
-#define CHECK_STORE_ON_START 	1
-#else
-#define CHECK_STORE_ON_START 	0
-#endif
+#define DEFAULT_CACHE_SIZE          CONFIG_FLASH_LOG_TASK_CACHE_SIZE
 
-#ifdef CONFIG_WEB_STORE_CHECK_ON_START
-#define CHECK_WEB_STORE_ON_START 	1
-#else
-#define CHECK_WEB_STORE_ON_START 	0
+#define HC_WIFI_OK		            BIT1	// Set if wifi connection established
 #endif
-
-#define DEFAULT_CACHE_SIZE      CONFIG_FLASH_LOG_TASK_CACHE_SIZE
 
 static const char *TAG = "flash_log";
 
+#ifdef CONFIG_USE_FLASH_LOGGING  
 /* objects used to manipulate the main queue of events */
 QueueHandle_t flash_log_queue;
 /* @brief task handle for the flash log task */
@@ -91,19 +88,17 @@ static void save_flash_log(log_message_t *msg){
     if(wifi_config->ipv4_ntp) {
         /* Check HTTP client ready */
         EventBits_t uxBits = xEventGroupGetBits(flash_log_events);
-        if( (uxBits & HC_STATUS_OK) == 0 ) {
+        if( (uxBits & HC_WIFI_OK) == 0 ) {
             return;
         }
     }
     flash_log_send_message(FLASH_LOG_SAVE, msg, NULL);
 }
-#endif
 
 void read_flash_log(send_msg func){
-#ifdef CONFIG_USE_FLASH_LOGGING    
     flash_log_send_message(FLASH_LOG_READ, NULL, func);
-#endif
 }
+#endif
 
 void clear_flash_log(){
 #ifdef CONFIG_USE_FLASH_LOGGING    
@@ -167,6 +162,12 @@ static void flash_log_task(void* pvParameters) {
         if( xStatus == pdPASS ){
             switch(msg.order) {
                 case FLASH_LOG_SAVE:{
+                    EventBits_t uxBits = xEventGroupGetBits(flash_log_events);
+                    if( (uxBits & HC_WIFI_OK) == 0 ) {
+                        ESP_LOGW(TAG, "System time not set!");
+                        break;
+                    }
+
                     esp_err_t esp_err = ESP_FAIL;
                     size_t sz = sizeof(log_message_t);
                     FILE *f = fopen(LOG_FILE, "rb");
@@ -208,16 +209,10 @@ static void flash_log_task(void* pvParameters) {
                     if (f == NULL) {
                         ESP_LOGE(TAG, "Failed to open file %s for reading", LOG_FILE);
                     }else{
-                        EventBits_t uxBits;	
+                        EventBits_t uxBits = xEventGroupGetBits(flash_log_events);
                         do{
-                            const TickType_t xTicksToWait = 100 / portTICK_PERIOD_MS;
-                            uxBits = xEventGroupWaitBits(
-                                        flash_log_events,       // The event group being tested.
-                                        HC_STATUS_OK,           // The bits within the event group to wait for.
-                                        pdFALSE,                // HC_STATUS_OK should be not cleared before returning.
-                                        pdFALSE,                // Don't wait for both bits, either bit will do.
-                                        xTicksToWait );         // Wait a maximum of 100ms for either bit to be set.                            
-                            if( (uxBits & HC_STATUS_OK) == 0 ) {
+                            if( (uxBits & HC_WIFI_OK) == 0 ) {
+                                ESP_LOGW(TAG, "System time not set!");
                                 break;
                             }
                             if(fread(buffer, sz, 1, f)) {
@@ -228,7 +223,7 @@ static void flash_log_task(void* pvParameters) {
                             }
                         }while( !feof(f) );
                         fclose(f);
-                        if( (uxBits & HC_STATUS_OK) != 0 ) {
+                        if( (uxBits & HC_WIFI_OK) != 0 ) {
                             f = fopen(LOG_FILE, "wb");
                             fclose(f);
                         }
@@ -250,21 +245,25 @@ static void flash_log_task(void* pvParameters) {
 #endif
 
 /**
-  * @brief  "This callback function is called  when the http client activates"
+  * @brief  "This callback function is called  when the wifi connected"
   * @param  pvParameters: Pointer to received data
   * @retval None
   */
-static void cb_http_client_ready(void* pvParameters) {
-    xEventGroupSetBits(flash_log_events, HC_STATUS_OK);
+static void cb_wifi_connect(void* pvParameters) {
+#ifdef CONFIG_USE_FLASH_LOGGING  
+    xEventGroupSetBits(flash_log_events, HC_WIFI_OK);
+#endif
 }
 
 /**
-  * @brief  "This callback function is called  when the http client deactivates"
+  * @brief  "This callback function is called  when the wifi disconnected"
   * @param  pvParameters: Pointer to received data
   * @retval None
   */
-static void cb_http_client_not_ready(void* pvParameters) {
-    xEventGroupClearBits(flash_log_events, HC_STATUS_OK);
+static void cb_wifi_lost(void* pvParameters) {
+#ifdef CONFIG_USE_FLASH_LOGGING  
+    xEventGroupClearBits(flash_log_events, HC_WIFI_OK);
+#endif
 }
 
 void init_flash() {
@@ -283,8 +282,10 @@ void init_flash() {
 		CHECK_STORE_ON_START
 		));
 
-    get_sha256_of_partitions();
-    
+    get_sha256_of_partitions(); 
+}
+
+void init_flash_log() {
 #ifdef CONFIG_USE_FLASH_LOGGING    
 	/* memory allocation */
 	flash_log_queue = xQueueCreate( 4, sizeof(flash_log_request_t) );  
@@ -292,9 +293,13 @@ void init_flash() {
     /* create flash log group */
     flash_log_events = xEventGroupCreate();    
 
-    /* Callbacks link */
-    http_client_set_ready_callback(&cb_http_client_ready);
-    http_client_set_not_ready_callback(&cb_http_client_not_ready);
+    /* subscribe to wifi manager events */
+    wifi_manager_set_callback(WM_ORDER_HTTP_CLIENT_INIT, &cb_wifi_connect);
+    wifi_manager_set_callback(WM_EVENT_STA_DISCONNECTED, &cb_wifi_lost);
+    wifi_manager_set_callback(WM_ORDER_STOP_AP, &cb_wifi_lost);
+    wifi_manager_set_callback(WM_ORDER_START_AP, &cb_wifi_lost);
+    wifi_manager_set_callback(WM_EVENT_SCAN_DONE, &cb_wifi_lost);
+    wifi_manager_set_callback(WM_ORDER_START_WIFI_SCAN, &cb_wifi_lost);
 
     /* create queue task */
     xTaskCreate(&flash_log_task, "flash_log_task", DEFAULT_CACHE_SIZE, NULL, WIFI_MANAGER_TASK_PRIORITY+1, &task_flash_log);

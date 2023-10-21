@@ -35,14 +35,19 @@
 #include "ota.h"
 #endif
 
-#include "list.h"
 #include "manager.h"
 #include "flash.h"
+#include "callback.h"
 #include "http_client.h"
 
 #define DEFAULT_CACHE_SIZE      CONFIG_HTTP_CLIENT_TASK_CACHE_SIZE
 #define MAX_HTTP_URL_SIZE       CONFIG_HTTP_CLIENT_MAX_URL_LEN
 #define MAX_HTTP_OUTPUT_BUFFER  CONFIG_HTTP_CLIENT_MAX_RESPONSE_LEN
+
+#define HC_STATUS_OK  	        BIT0	// Set if http connection established
+#define HC_WIFI_OK		        BIT1	// Set if wifi connection established
+#define HC_SEND_OK  	        BIT2	// Set if sending completed successfully
+#define HC_SEND_FAIL  	        BIT3	// Set if send failed
 
 #ifdef CONFIG_IDF_TARGET_ESP32
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -50,16 +55,15 @@
 
 static const char *TAG = "http_client";
 
-// static char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
 static char *output_buffer;  // Buffer to store response of http request from event handler
 
 static char url_buffer[MAX_HTTP_URL_SIZE] = {0};
 
 static esp_http_client_handle_t client = NULL;
 
-/* @brief task handle for the http client send task */
+/* task handle for the http client send task */
 static TaskHandle_t task_http_client_send = NULL;
-/* @brief task handle for the http client order task */
+/* task handle for the http client order task */
 static TaskHandle_t task_http_client_order = NULL;
 /* objects used to manipulate the http client send queue of events */
 QueueHandle_t http_client_send_queue;
@@ -72,10 +76,10 @@ EventGroupHandle_t http_client_events;
 void (*cb_response_ptr)(const char*, int) = NULL;
 
 /* @brief callback http client ready function pointer */
-CallBackList* cb_ready_ptr = NULL;
+callback_list_t* cb_ready_ptr = NULL;
 
 /* @brief callback http client not ready function pointer */
-CallBackList* cb_not_ready_ptr = NULL;
+callback_list_t* cb_not_ready_ptr = NULL;
 
 static char* get_full_path(const char* uri) {
     esp32_config_t* wifi_config = wifi_manager_get_config();
@@ -109,19 +113,19 @@ static void cb_wifi_connect(void *pvParameter){
 }
 
 static void cb_wifi_lost(void* pvParameter) {
-    run_cb(cb_not_ready_ptr, NULL);
+    run_callback(cb_not_ready_ptr, NULL);
     xEventGroupClearBits(http_client_events, HC_WIFI_OK);
 }
 
 static void cb_ota_finish(bool fail) {
     if(fail){
-        run_cb(cb_ready_ptr, NULL);
+        run_callback(cb_ready_ptr, NULL);
         xEventGroupSetBits(http_client_events, HC_STATUS_OK);
     }
 }
 
 void http_client_destroy() {   
-    run_cb(cb_not_ready_ptr, NULL);
+    run_callback(cb_not_ready_ptr, NULL);
     xEventGroupClearBits(http_client_events, HC_WIFI_OK);
 
 	vTaskDelete(task_http_client_send);
@@ -194,13 +198,13 @@ void http_client_set_response_callback(void (*func_ptr)(const char*, int) ){
 
 void http_client_set_ready_callback(void (*func_ptr)(void*) ){
     if (func_ptr) {
-        push_cb(&cb_ready_ptr, func_ptr);
+        push_callback(&cb_ready_ptr, func_ptr);
     }
 }
 
 void http_client_set_not_ready_callback(void (*func_ptr)(void*) ){
     if (func_ptr) {
-        push_cb(&cb_not_ready_ptr, func_ptr);
+        push_callback(&cb_not_ready_ptr, func_ptr);
     }
 }
 
@@ -288,7 +292,7 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
                 if(!ota(output_buffer, output_len)){
                     if(cb_response_ptr) cb_response_ptr( output_buffer, output_len );
                 }else {
-                    run_cb(cb_not_ready_ptr, NULL);
+                    run_callback(cb_not_ready_ptr, NULL);
                     xEventGroupClearBits(http_client_events, HC_STATUS_OK);
                     firmware_upgrade(cb_ota_finish);
                 }
@@ -302,7 +306,7 @@ static esp_err_t http_client_handler(esp_http_client_event_t *evt) {
             ESP_LOGW(TAG, "HTTP_EVENT_DISCONNECTED");
 
             /* callback */
-            run_cb(cb_not_ready_ptr, NULL);
+            run_callback(cb_not_ready_ptr, NULL);
             
             xEventGroupClearBits(http_client_events, HC_STATUS_OK);
             int mbedtls_err = 0;
@@ -453,7 +457,7 @@ static void http_client_order_task( void * pvParameters ) {
                                 xEventGroupSetBits(http_client_events, HC_STATUS_OK);
 
                                 /* callback */
-                                run_cb(cb_ready_ptr, NULL);
+                                run_callback(cb_ready_ptr, NULL);
                                 break;
                             }else {
                                 ESP_LOGE(TAG, "Conection fail: %s", esp_err_to_name(err));

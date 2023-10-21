@@ -136,16 +136,6 @@ menu "WIFI Manager Configuration"
     
     endmenu
 
-    menu "HTTP Server Configuration"
-   
-        config WEB_BASE_API
-            string "API base path"
-            default "/api/v1"
-            help
-            Specify API base path.
-       
-    endmenu
-
     menu "HTTP Client Configuration"
    
         config HTTP_CLIENT_TASK_CACHE_SIZE

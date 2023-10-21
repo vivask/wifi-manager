@@ -118,6 +118,9 @@ void app_main(void)
   /* WIFI initialize */
   wifi_manager_start(false);
 
+  /* Flash Logginf initialize */
+  init_flash_log();
+
   /* HTTP Client initialize */
   http_client_initialize();
 

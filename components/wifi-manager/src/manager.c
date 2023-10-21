@@ -48,16 +48,16 @@
 #include <esp_http_server.h>
 #include <cJSON.h>
 
-// #include "spiffs.h"
 #include "flash.h"
 #include "dns_server.h"
 #include "http_server.h"
 #include "ntp_client.h"
 #include "storage.h"
+#include "callback.h"
 #include "manager.h"
 
 // #define SETUP_MODE
-//#define DEBUG_MODE
+// #define DEBUG_MODE
 
 /* --- PRINTF_BYTE_TO_BINARY macro's --- */
 #ifdef DEBUG_MODE
@@ -91,6 +91,8 @@
 #define DEFAULT_CACHE_SIZE 			CONFIG_WIFI_MANAGER_TASK_CACHE_SIZE
 #define DEFAULT_TIMEZONE 			CONFIG_TIMEZONE
 
+/* @brief Array of callback function pointers */
+callback_list_t **cb_ptr_arr = NULL;
 
 /* objects used to manipulate the main queue of events */
 QueueHandle_t wifi_manager_queue;
@@ -115,9 +117,6 @@ char *ip_info_json = NULL;
 
 esp32_config_t* wifi_manager_config = NULL;
 wifi_config_t* wifi_manager_sta_config = NULL;
-
-/* @brief Array of callback function pointers */
-void (**cb_ptr_arr)(void*) = NULL;
 
 /* @brief tag used for ESP serial console messages */
 static const char TAG[] = "wifi_manager";
@@ -230,7 +229,7 @@ void wifi_manager_start(bool ap_mode){
 
 	memset(&wifi_settings.sta_static_ip_config, 0x00, sizeof(esp_netif_ip_info_t));
 
-	cb_ptr_arr = malloc(sizeof(void (*)(void*)) * WM_MESSAGE_CODE_COUNT);
+	cb_ptr_arr = malloc(sizeof(callback_list_t) * WM_MESSAGE_CODE_COUNT);
 	for(int i=0; i<WM_MESSAGE_CODE_COUNT; i++){
 		cb_ptr_arr[i] = NULL;
 	}
@@ -538,7 +537,7 @@ BaseType_t wifi_manager_send_message(message_code_t code, void *param){
 void wifi_manager_set_callback(message_code_t message_code, void (*func_ptr)(void*) ){
 
 	if(cb_ptr_arr && message_code < WM_MESSAGE_CODE_COUNT){
-		cb_ptr_arr[message_code] = func_ptr;
+		push_callback(&cb_ptr_arr[message_code], func_ptr);
 	}
 }
 
@@ -784,7 +783,7 @@ void wifi_manager( void * pvParameters ){
 				}
 
 				/* callback */
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])( msg.param );
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], msg.param);			
 				free(evt_scan_done);
 				}
 				break;
@@ -800,7 +799,7 @@ void wifi_manager( void * pvParameters ){
 				}
 
 				/* callback */
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], NULL);
 
 				break;
 
@@ -818,7 +817,7 @@ void wifi_manager( void * pvParameters ){
 				}
 
 				/* callback */
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], NULL);
 
 				/* reset if esp32 configuration complet */
 				uxBits = xEventGroupGetBits(wifi_manager_event_group);
@@ -864,8 +863,7 @@ void wifi_manager( void * pvParameters ){
 				}
 
 				/* callback */
-				FLASH_LOGI("WiFi Connection established on personal mode");
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], NULL);
 
 				break;
 
@@ -945,7 +943,7 @@ void wifi_manager( void * pvParameters ){
 				}
 
 				/* callback */
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])( msg.param );
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], msg.param);
 				
 				free(wifi_event_sta_disconnected);
 
@@ -962,7 +960,7 @@ void wifi_manager( void * pvParameters ){
 				start_dns_server();
 
 				/* callback */
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], NULL);
 
 				break;
 
@@ -990,7 +988,7 @@ void wifi_manager( void * pvParameters ){
 					start_rest_server(STORE_BASE_PATH);
 
 					/* callback */
-					if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+					if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], NULL);
 					
 				}
 
@@ -1027,7 +1025,7 @@ void wifi_manager( void * pvParameters ){
 
 				/* callback and free memory allocated for the void* param */
 				free(ip_event_got_ip);
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])( msg.param );
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], msg.param);
 					
 				break;
 
@@ -1044,7 +1042,7 @@ void wifi_manager( void * pvParameters ){
 				}
 
 				/* callback */
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], NULL);
 				break;
 				
 			case WM_ORDER_HTTPD_REQUEST:
@@ -1070,7 +1068,7 @@ void wifi_manager( void * pvParameters ){
 				ESP_ERROR_CHECK(esp_wifi_disconnect());
 
 				/* callback */
-				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				if(cb_ptr_arr[msg.code]) run_callback(cb_ptr_arr[msg.code], NULL);
 
 				break;
 
